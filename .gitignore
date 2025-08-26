@@ -19,7 +19,6 @@ target/
 *.log
 
 # Solana program build files
-*.so
 *.dSYM/
 .vscode/
 .DS_Store
