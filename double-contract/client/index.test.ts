@@ -17,12 +17,12 @@ test("one transfer", () => {
 	svm.airdrop(payer.publicKey, BigInt(5 * LAMPORTS_PER_SOL));
 	const blockhash = svm.latestBlockhash();
     const dataAccount = Keypair.generate();
+	
 	const ixs = [
 		SystemProgram.createAccount({
 			fromPubkey: payer.publicKey,
             newAccountPubkey: dataAccount.publicKey,
 			space: 4,
-			// lamports: 91872 * LAMPORTS_PER_SOL,
 			lamports: Number(svm.minimumBalanceForRentExemption(BigInt(4))),
             programId: contractKey
 		}),
@@ -33,9 +33,10 @@ test("one transfer", () => {
     tx.feePayer = payer.publicKey;
 	tx.sign(payer, dataAccount);
 	svm.sendTransaction(tx);
+    
     const balanceAfter = svm.getBalance(dataAccount.publicKey);
-    // console.log("Lamports Value: ", svm.minimumBalanceForRentExemption(BigInt(4)))
     expect(balanceAfter).toBe(svm.minimumBalanceForRentExemption(BigInt(4)));
+    
     function double_it(){
         const ix2 = new TransactionInstruction ({
             keys: [
@@ -53,13 +54,22 @@ test("one transfer", () => {
         tx2.sign(payer);
         svm.sendTransaction(tx2);
         svm.expireBlockhash();
+        
+        // Debug: Check the data after each call
+        const accountAfter = svm.getAccount(dataAccount.publicKey);
+        console.log("Data after double_it call:", Array.from(accountAfter.data));
     }
+    
+    console.log("Initial data:", Array.from(svm.getAccount(dataAccount.publicKey).data));
+    
     double_it();
     double_it();
     double_it();
     double_it();
     
     const newDataAccount = svm.getAccount(dataAccount.publicKey);
+    console.log("Final data:", Array.from(newDataAccount.data));
     
-    console.log("NewDataAccount: ", newDataAccount);
+    // Verify the final value is 8 (little-endian: [8, 0, 0, 0])
+    expect(Array.from(newDataAccount.data)).toEqual([8, 0, 0, 0]);
 });
